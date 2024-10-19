@@ -30,14 +30,15 @@ namespace CapSolverProxyTests
         }
 
         [TestMethod]
-        [DataRow("{\"errorId\":0,\"errorCode\":\"\",\"errorDescription\":\"\",\"taskId\":\"37223a89-06ed-442c-a0b8-22067b79c5b4\"}")]
+        [DataRow("{\"errorId\":0,\"status\":\"ready\",\"solution\":{\"objects\":[5]},\"taskId\":\"a2951c2e-9649-49fd-984c-1ff0fcbf828b\"}")]
         public void TestDeserializeCreateTaskResponse(string responseJson)
         {
             var response = JsonConvert.DeserializeObject<CreateTaskResponse>(responseJson);
             Assert.AreEqual(0, response?.errorId);
-            Assert.AreEqual("", response?.errorCode);
-            Assert.AreEqual("", response?.errorDescription);
-            Assert.AreEqual("37223a89-06ed-442c-a0b8-22067b79c5b4", response?.taskId);
+            Assert.AreEqual("ready", response?.status);
+            Assert.AreEqual(1, response?.solution?.objects?.Count);
+            Assert.AreEqual(5, response?.solution?.objects?[0]);
+            Assert.AreEqual("a2951c2e-9649-49fd-984c-1ff0fcbf828b", response?.taskId);
         }
     }
 }
