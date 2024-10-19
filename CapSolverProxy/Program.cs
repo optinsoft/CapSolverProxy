@@ -21,4 +21,6 @@ app.MapPost("/createTask", async delegate(HttpContext context)
     return await capsolver.CreateTask(requestJson);
 });
 
+app.MapGet("/stats", () => capsolver.GetStats());
+
 app.Run();
