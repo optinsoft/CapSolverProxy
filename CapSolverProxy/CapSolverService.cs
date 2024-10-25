@@ -3,6 +3,7 @@
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Json;
+    using System.Runtime.CompilerServices;
     using System.Security.Cryptography;
     using System.Text;
     using Microsoft.Extensions.Caching.Memory;
@@ -17,6 +18,7 @@
         private readonly CapSolverStats stats;
         private readonly string ImagesFolder;
         private readonly bool SaveImages;
+        private readonly bool UseCache;
 
         public CapSolverService(CapSolverSettings settings, ILoggerFactory? loggerFactory) {
             client = new();
@@ -37,6 +39,7 @@
                 ImagesFolder += Path.DirectorySeparatorChar;
             }
             SaveImages = settings.SaveImages;
+            UseCache = settings.UseCache;
         }
 
         public static string? GetImagesHash(CreateTaskRequest? request)
@@ -89,11 +92,14 @@
                 var imagesHash = GetImagesHash(request);
                 if (!string.IsNullOrEmpty(imagesHash))
                 {
-                    if (cache.TryGetValue(imagesHash, out string responseJson))
+                    if (UseCache)
                     {
-                        stats.IncFromCache();
-                        logger?.LogInformation("Response from cache for {}", imagesHash);
-                        return responseJson;
+                        if (cache.TryGetValue(imagesHash, out string responseJson))
+                        {
+                            stats.IncFromCache();
+                            logger?.LogInformation("Response from cache for {}", imagesHash);
+                            return responseJson;
+                        }
                     }
                     if (SaveImages && ImagesFolder.Length > 0)
                     {
@@ -105,11 +111,14 @@
                 if (response.IsSuccessStatusCode)
                 {
                     var responseJson = await response.Content.ReadAsStringAsync();
-                    var result = JsonConvert.DeserializeObject<CreateTaskResponse>(responseJson);
-                    if (string.IsNullOrEmpty(result?.errorCode) && ((result?.errorId ?? 0) == 0))
-                    {         
-                        cache.Set(imagesHash, responseJson, cacheEntryOptions);
-                        stats.IncCached();
+                    if (UseCache)
+                    {
+                        var result = JsonConvert.DeserializeObject<CreateTaskResponse>(responseJson);
+                        if (string.IsNullOrEmpty(result?.errorCode) && ((result?.errorId ?? 0) == 0))
+                        {
+                            cache.Set(imagesHash, responseJson, cacheEntryOptions);
+                            stats.IncCached();
+                        }
                     }
                     stats.IncFromCapSolver();
                     logger?.LogInformation("Response from capsolver API for {}", imagesHash);
