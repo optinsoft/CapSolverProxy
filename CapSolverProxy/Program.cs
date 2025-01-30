@@ -7,6 +7,8 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
+app.UseMiddleware<LocalhostMiddleware>();
+
 var settings = builder.Configuration.GetSection("CapSolverProxy").Get<CapSolverSettings>();
 
 using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
