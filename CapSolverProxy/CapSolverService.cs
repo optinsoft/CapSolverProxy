@@ -20,26 +20,26 @@
         private readonly bool SaveImages;
         private readonly bool UseCache;
 
-        public CapSolverService(CapSolverSettings settings, ILoggerFactory? loggerFactory) {
+        public CapSolverService(CapSolverSettings? settings, ILoggerFactory? loggerFactory) {
             client = new();
             cacheEntryOptions = new MemoryCacheEntryOptions()
                 .SetSize(1)
                 .SetPriority(CacheItemPriority.High)
-                .SetSlidingExpiration(TimeSpan.FromSeconds(settings.CacheSlidingExpiration))
-                .SetAbsoluteExpiration(TimeSpan.FromSeconds(settings.CacheAbsoluteExpiration));
+                .SetSlidingExpiration(TimeSpan.FromSeconds(settings?.CacheSlidingExpiration ?? 3600))
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(settings?.CacheAbsoluteExpiration ?? 86400));
             cache = new(new MemoryCacheOptions()
             {
-                SizeLimit = settings.CacheSizeLimit
+                SizeLimit = settings?.CacheSizeLimit ?? 16384
             });
             logger = loggerFactory?.CreateLogger("CapSolverService");
             stats = new CapSolverStats();
-            ImagesFolder = settings.ImagesFolder ?? "";
-            if (ImagesFolder.Length > 0 && !ImagesFolder.EndsWith("/") && !ImagesFolder.EndsWith("\\"))
+            ImagesFolder = settings?.ImagesFolder ?? "";
+            if (ImagesFolder.Length > 0 && !ImagesFolder.EndsWith('/') && !ImagesFolder.EndsWith('\\'))
             {
                 ImagesFolder += Path.DirectorySeparatorChar;
             }
-            SaveImages = settings.SaveImages;
-            UseCache = settings.UseCache;
+            SaveImages = settings?.SaveImages ?? false;
+            UseCache = settings?.UseCache ?? false;
         }
 
         public static string? GetImagesHash(CreateTaskRequest? request)
@@ -94,11 +94,13 @@
                 {
                     if (UseCache)
                     {
-                        if (cache.TryGetValue(imagesHash, out string responseJson))
+                        if (cache.TryGetValue(imagesHash, out string? responseJson))
                         {
-                            stats.IncFromCache();
-                            logger?.LogInformation("Response from cache for {}", imagesHash);
-                            return responseJson;
+                            if (!string.IsNullOrEmpty(responseJson)) {
+                                stats.IncFromCache();
+                                logger?.LogInformation("Response from cache for {}", imagesHash);
+                                return responseJson;
+                            }
                         }
                     }
                     if (SaveImages && ImagesFolder.Length > 0)
@@ -111,7 +113,7 @@
                 if (response.IsSuccessStatusCode)
                 {
                     var responseJson = await response.Content.ReadAsStringAsync();
-                    if (UseCache)
+                    if (UseCache && !string.IsNullOrEmpty(imagesHash))
                     {
                         var result = JsonConvert.DeserializeObject<CreateTaskResponse>(responseJson);
                         if (string.IsNullOrEmpty(result?.errorCode) && ((result?.errorId ?? 0) == 0))
