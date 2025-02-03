@@ -4,6 +4,8 @@ namespace CapSolverProxy
 {
     public class CapSolverStats
     {
+        public readonly string serviceInfo;
+
         public int requests;
         public int fromcapsolver;
         public int fromcache;
@@ -11,8 +13,6 @@ namespace CapSolverProxy
         public int errors;
         public int cached;
         public int cachecount;
-
-        public readonly string serviceInfo;
 
         private readonly object _statsLock = new();
 
