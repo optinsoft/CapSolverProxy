@@ -7,18 +7,18 @@ namespace CapSolverProxy
         public readonly string serviceInfo;
 
         public int requests;
-        public int fromcapsolver;
-        public int fromcache;
+        public CapSolverSuccessStats success;
         public int failed;
         public int errors;
         public int cached;
-        public int cachecount;
+        public int cacheCount;
 
         private readonly object _statsLock = new();
 
         public CapSolverStats()
         {
             serviceInfo = $"Service created at {DateTime.Now}";
+            success = new CapSolverSuccessStats();
         }
 
         public void IncRequests()
@@ -29,18 +29,18 @@ namespace CapSolverProxy
             }
         }
 
-        public void IncFromCapSolver()
+        public void IncSuccessFromCapSolver()
         {
             lock(_statsLock)
             {
-                fromcapsolver += 1;
+                success.fromCapSolver += 1;
             }
         }
 
-        public void IncFromCache() { 
+        public void IncSuccessFromCache() { 
             lock(_statsLock)
             {
-                fromcache += 1;
+                success.fromCache += 1;
             }
         }
 
@@ -73,7 +73,7 @@ namespace CapSolverProxy
             string statsJson;
             lock (_statsLock)
             {
-                cachecount = CurrentCacheCount;
+                cacheCount = CurrentCacheCount;
                 statsJson = JsonConvert.SerializeObject(this);
             }
             return statsJson;

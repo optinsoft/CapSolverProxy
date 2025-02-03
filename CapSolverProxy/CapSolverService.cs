@@ -97,7 +97,7 @@
                         if (cache.TryGetValue(imagesHash, out string? responseJson))
                         {
                             if (!string.IsNullOrEmpty(responseJson)) {
-                                stats.IncFromCache();
+                                stats.IncSuccessFromCache();
                                 logger?.LogInformation("Response from cache for {}", imagesHash);
                                 return responseJson;
                             }
@@ -122,7 +122,7 @@
                             stats.IncCached();
                         }
                     }
-                    stats.IncFromCapSolver();
+                    stats.IncSuccessFromCapSolver();
                     logger?.LogInformation("Response from capsolver API for {}", imagesHash);
                     return responseJson;
                 }
