@@ -19,10 +19,16 @@ app.MapGet("/", () => "Hello World!");
 app.MapPost("/createTask", async delegate(HttpContext context)
 {
     using StreamReader reader = new(context.Request.Body, Encoding.UTF8);
-    string requestJson = await reader.ReadToEndAsync();    
-    return await capsolver.CreateTask(requestJson);
+    string requestJson = await reader.ReadToEndAsync();
+    var responseJson = await capsolver.CreateTask(requestJson);
+    context.Response.ContentType = "application/json";
+    return responseJson;
 });
 
-app.MapGet("/stats", () => capsolver.GetStats());
+app.MapGet("/ProxyStats", (HttpContext context) => {
+    var responseJson = capsolver.GetStats();
+    context.Response.ContentType = "application/json";
+    return responseJson;
+});
 
 app.Run();

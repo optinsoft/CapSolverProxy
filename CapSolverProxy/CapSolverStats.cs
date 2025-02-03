@@ -12,7 +12,14 @@ namespace CapSolverProxy
         public int cached;
         public int cachecount;
 
+        public readonly string serviceInfo;
+
         private readonly object _statsLock = new();
+
+        public CapSolverStats()
+        {
+            serviceInfo = $"Service created at {DateTime.Now}";
+        }
 
         public void IncRequests()
         {
@@ -67,7 +74,7 @@ namespace CapSolverProxy
             lock (_statsLock)
             {
                 cachecount = CurrentCacheCount;
-                statsJson = "{" + JsonConvert.SerializeObject(this) + "}";
+                statsJson = JsonConvert.SerializeObject(this);
             }
             return statsJson;
         }
