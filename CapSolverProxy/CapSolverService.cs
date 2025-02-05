@@ -83,9 +83,46 @@
             }
         }
 
+        public async Task<string> GetBalance(string requestJson)
+        {
+            try
+            {
+                var request = JsonConvert.DeserializeObject<GetBalanceRequest>(requestJson);
+                HttpResponseMessage responseMessage = await client.PostAsJsonAsync(
+                    "https://api.capsolver.com/getBalance", request);
+                if (responseMessage.IsSuccessStatusCode)
+                {
+                    var responseJson = await responseMessage.Content.ReadAsStringAsync();
+                    var response = JsonConvert.DeserializeObject<GetBalanceResponse>(responseJson);
+                    if (response?.balance != null)
+                    {
+                        stats.UpdateLastBalance(response.balance.Value);
+                    }
+                    return responseJson;
+                }
+                else
+                {
+                    if (responseMessage.StatusCode == HttpStatusCode.BadRequest)
+                    {
+                        var responseJson = await responseMessage.Content.ReadAsStringAsync();
+                        stats.IncErrors();
+                        return responseJson;
+                    }
+                    return "{" + string.Format("\"errorId\":1,\"errorCode\":\"{0}\", \"errorDescription\":\"GetBalance failed with status: {1} ({2})\"",
+                        (int)responseMessage.StatusCode, responseMessage.StatusCode, (int)responseMessage.StatusCode) + "}";
+                }
+            }
+            catch (Exception e)
+            {
+                var errorMessage = e.Message.Replace("\\", "\\\\").Replace("\"", "\\\"");
+                return "{" + string.Format("\"errorId\":1,\"errorCode\":\"{0}\", \"errorDescription\":\"GetBalance failed with error: {1}\"",
+                    "ERROR_CAPSOLVER_PROXY_EXCEPTION", errorMessage) + "}";
+            }
+        }
+
         public async Task<string> CreateTask(string requestJson)
         {
-            stats.IncRequests();
+            stats.IncCreateTaskRequests();
             try
             {
                 var request = JsonConvert.DeserializeObject<CreateTaskRequest>(requestJson);
@@ -108,11 +145,11 @@
                         SaveImagesToFolder(request, ImagesFolder, imagesHash);
                     }
                 }
-                HttpResponseMessage response = await client.PostAsJsonAsync(
+                HttpResponseMessage responseMessage = await client.PostAsJsonAsync(
                     "https://api.capsolver.com/createTask", request);
-                if (response.IsSuccessStatusCode)
+                if (responseMessage.IsSuccessStatusCode)
                 {
-                    var responseJson = await response.Content.ReadAsStringAsync();
+                    var responseJson = await responseMessage.Content.ReadAsStringAsync();
                     if (UseCache && !string.IsNullOrEmpty(imagesHash))
                     {
                         var result = JsonConvert.DeserializeObject<CreateTaskResponse>(responseJson);
@@ -127,21 +164,57 @@
                     return responseJson;
                 }
                 else {
-                    if (response.StatusCode == HttpStatusCode.BadRequest)
+                    if (responseMessage.StatusCode == HttpStatusCode.BadRequest)
                     {
-                        var responseJson = await response.Content.ReadAsStringAsync();
+                        var responseJson = await responseMessage.Content.ReadAsStringAsync();
                         stats.IncErrors();
                         return responseJson;
                     }
                     stats.IncErrors();
                     return "{" + string.Format("\"errorId\":1,\"errorCode\":\"{0}\", \"errorDescription\":\"CreateTask failed with status: {1} ({2})\"",
-                        (int)response.StatusCode, response.StatusCode, (int)response.StatusCode) + "}";
+                        (int)responseMessage.StatusCode, responseMessage.StatusCode, (int)responseMessage.StatusCode) + "}";
                 }
             } catch (Exception e)
             {
                 stats.IncFailed();
                 var errorMessage = e.Message.Replace("\\", "\\\\").Replace("\"", "\\\"");
                 return "{" + string.Format("\"errorId\":1,\"errorCode\":\"{0}\", \"errorDescription\":\"CreateTask failed with error: {1}\"",
+                    "ERROR_CAPSOLVER_PROXY_EXCEPTION", errorMessage) + "}";
+            }
+        }
+
+        public async Task<string> GetTaskResult(string requestJson)
+        {
+            stats.IncGetTaskResultRequests();
+            try
+            {
+                var request = JsonConvert.DeserializeObject<GetTaskResultRequest>(requestJson);
+                HttpResponseMessage responseMessage = await client.PostAsJsonAsync(
+                    "https://api.capsolver.com/getTaskResult", request);
+                if (responseMessage.IsSuccessStatusCode)
+                {
+                    var responseJson = await responseMessage.Content.ReadAsStringAsync();
+                    stats.IncSuccessFromCapSolver();
+                    return responseJson;
+                }
+                else
+                {
+                    if (responseMessage.StatusCode == HttpStatusCode.BadRequest)
+                    {
+                        var responseJson = await responseMessage.Content.ReadAsStringAsync();
+                        stats.IncErrors();
+                        return responseJson;
+                    }
+                    stats.IncErrors();
+                    return "{" + string.Format("\"errorId\":1,\"errorCode\":\"{0}\", \"errorDescription\":\"GetTaskResult failed with status: {1} ({2})\"",
+                        (int)responseMessage.StatusCode, responseMessage.StatusCode, (int)responseMessage.StatusCode) + "}";
+                }
+            }
+            catch (Exception e)
+            {
+                stats.IncFailed();
+                var errorMessage = e.Message.Replace("\\", "\\\\").Replace("\"", "\\\"");
+                return "{" + string.Format("\"errorId\":1,\"errorCode\":\"{0}\", \"errorDescription\":\"GetTaskResult failed with error: {1}\"",
                     "ERROR_CAPSOLVER_PROXY_EXCEPTION", errorMessage) + "}";
             }
         }

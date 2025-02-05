@@ -16,6 +16,15 @@ CapSolverService capsolver = new(settings, factory);
 
 app.MapGet("/", () => "Hello World!");
 
+app.MapPost("/getBalance", async delegate (HttpContext context)
+{
+    using StreamReader reader = new(context.Request.Body, Encoding.UTF8);
+    string requestJson = await reader.ReadToEndAsync();
+    var responseJson = await capsolver.GetBalance(requestJson);
+    context.Response.ContentType = "application/json";
+    return responseJson;
+});
+
 app.MapPost("/createTask", async delegate(HttpContext context)
 {
     using StreamReader reader = new(context.Request.Body, Encoding.UTF8);

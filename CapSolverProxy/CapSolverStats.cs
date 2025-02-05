@@ -6,26 +6,36 @@ namespace CapSolverProxy
     {
         public readonly string serviceInfo;
 
-        public int requests;
+        public CapSolverRequestsStats requests;
         public CapSolverSuccessStats success;
         public int failed;
         public int errors;
         public int cached;
         public int cacheCount;
+        public CapSolverBalanceStats? lastBalance = null;
 
         private readonly object _statsLock = new();
 
         public CapSolverStats()
         {
             serviceInfo = $"Service created at {DateTime.Now}";
+            requests = new CapSolverRequestsStats();
             success = new CapSolverSuccessStats();
         }
 
-        public void IncRequests()
+        public void IncCreateTaskRequests()
         {
             lock(_statsLock)
             {
-                requests += 1;
+                requests.createTask += 1;
+            }
+        }
+
+        public void IncGetTaskResultRequests()
+        {
+            lock (_statsLock)
+            {
+                requests.getTaskResult += 1;
             }
         }
 
@@ -65,6 +75,19 @@ namespace CapSolverProxy
             lock (_statsLock)
             {
                 cached += 1;
+            }
+        }
+
+        public void UpdateLastBalance(double balance)
+        {
+            lock (_statsLock)
+            {
+                if (lastBalance == null)
+                {
+                    lastBalance = new CapSolverBalanceStats();
+                }
+                lastBalance.balance = balance;
+                lastBalance.balanceTime = $"{DateTime.Now}";
             }
         }
 
