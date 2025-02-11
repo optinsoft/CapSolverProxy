@@ -5,9 +5,22 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var AllowAllCors = "AllowAllCors";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: AllowAllCors,
+        builder => builder.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
+
 var app = builder.Build();
 
 app.UseMiddleware<LocalhostMiddleware>();
+
+app.UseCors(AllowAllCors);
 
 var settings = builder.Configuration.GetSection("CapSolverProxy").Get<CapSolverSettings>();
 
